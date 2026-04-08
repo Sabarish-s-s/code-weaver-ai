@@ -6,88 +6,63 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const SYSTEM_PROMPT = `You are AutoDev AI Agent, a full-stack application code generator. When given a user's app description, you generate a complete project with:
-
-1. React frontend with Tailwind CSS
-2. FastAPI backend with proper routing
-3. PostgreSQL database schema using SQLAlchemy
-4. JWT authentication (login/signup)
-5. Docker deployment configuration
-
-IMPORTANT: Return ONLY valid JSON (no markdown, no code fences). Use the exact structure below:
+const SYSTEM_PROMPT = `You are a code generator. Given an app description, return a JSON object with this structure:
 
 {
   "architecture": {
-    "overview": "Brief architecture description",
-    "components": [
-      {"name": "Frontend", "description": "..."},
-      {"name": "Backend", "description": "..."},
-      {"name": "Database", "description": "..."},
-      {"name": "Authentication", "description": "..."},
-      {"name": "Deployment", "description": "..."}
-    ],
-    "apiEndpoints": ["POST /api/auth/login", "POST /api/auth/signup", ...]
+    "overview": "Brief description",
+    "components": [{"name": "Frontend", "description": "..."}, {"name": "Backend", "description": "..."}, {"name": "Database", "description": "..."}, {"name": "Auth", "description": "..."}, {"name": "Deployment", "description": "..."}],
+    "apiEndpoints": ["POST /api/auth/login", "GET /api/items"]
   },
   "files": [
-    {
-      "path": "frontend/src/App.tsx",
-      "content": "actual code here",
-      "language": "tsx"
-    },
-    {
-      "path": "frontend/src/pages/Login.tsx",
-      "content": "actual code here",
-      "language": "tsx"
-    },
-    {
-      "path": "backend/main.py",
-      "content": "actual code here",
-      "language": "python"
-    },
-    {
-      "path": "backend/models.py",
-      "content": "actual code here",
-      "language": "python"
-    },
-    {
-      "path": "backend/auth.py",
-      "content": "actual code here",
-      "language": "python"
-    },
-    {
-      "path": "backend/routes/",
-      "content": "actual code here",
-      "language": "python"
-    },
-    {
-      "path": "backend/database.py",
-      "content": "actual code here",
-      "language": "python"
-    },
-    {
-      "path": "docker/Dockerfile.frontend",
-      "content": "actual code here",
-      "language": "dockerfile"
-    },
-    {
-      "path": "docker/Dockerfile.backend",
-      "content": "actual code here",
-      "language": "dockerfile"
-    },
-    {
-      "path": "docker-compose.yml",
-      "content": "actual code here",
-      "language": "yaml"
-    },
-    {
-      "path": "README.md",
-      "content": "setup instructions",
-      "language": "markdown"
-    }
+    {"path": "frontend/src/App.tsx", "content": "code here", "language": "tsx"},
+    {"path": "backend/main.py", "content": "code here", "language": "python"},
+    {"path": "docker-compose.yml", "content": "code here", "language": "yaml"}
   ]
 }
 
-Generate REAL, WORKING code — not pseudocode. Include proper imports, error handling, and comments. Make the code production-ready and modular.`;
+Rules:
+- Return ONLY the JSON object, no markdown fences, no explanation
+- Keep the app SIMPLE - a minimal viable version with 3-6 files max
+- Use React+Tailwind for frontend, FastAPI for backend, SQLAlchemy for DB
+- Include JWT auth, Dockerfiles, and docker-compose
+- Generate real working code with imports`;
+
+function extractJson(raw: string): unknown {
+  let cleaned = raw.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
+
+  const jsonStart = cleaned.search(/[{[]/);
+  if (jsonStart === -1) throw new Error("No JSON found in response");
+
+  const openChar = cleaned[jsonStart];
+  const closeChar = openChar === "[" ? "]" : "}";
+  const jsonEnd = cleaned.lastIndexOf(closeChar);
+  if (jsonEnd === -1) throw new Error("No closing bracket found");
+
+  cleaned = cleaned.substring(jsonStart, jsonEnd + 1);
+
+  try {
+    return JSON.parse(cleaned);
+  } catch {
+    // Fix common issues
+    cleaned = cleaned
+      .replace(/,\s*}/g, "}")
+      .replace(/,\s*]/g, "]")
+      .replace(/[\x00-\x1F\x7F]/g, (ch) => (ch === "\n" || ch === "\r" || ch === "\t" ? ch : ""));
+
+    try {
+      return JSON.parse(cleaned);
+    } catch (e) {
+      // Check for truncation
+      const openBraces = (cleaned.match(/{/g) || []).length;
+      const closeBraces = (cleaned.match(/}/g) || []).length;
+      if (openBraces !== closeBraces) {
+        throw new Error("Response was truncated - try a simpler prompt");
+      }
+      throw new Error("Failed to parse generated code");
+    }
+  }
+}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -118,7 +93,10 @@ serve(async (req) => {
         model: "google/gemini-2.5-flash",
         messages: [
           { role: "system", content: SYSTEM_PROMPT },
-          { role: "user", content: `Generate a complete full-stack application for: ${prompt}` },
+          {
+            role: "user",
+            content: `Generate a minimal full-stack app for: ${prompt}\n\nKeep it simple with 3-6 files. Return only the JSON.`,
+          },
         ],
       }),
     });
@@ -148,16 +126,7 @@ serve(async (req) => {
       throw new Error("No content in AI response");
     }
 
-    // Try to parse the JSON from the AI response
-    let parsed;
-    try {
-      // Strip markdown code fences if present
-      const cleaned = content.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
-      parsed = JSON.parse(cleaned);
-    } catch {
-      console.error("Failed to parse AI response:", content.substring(0, 500));
-      throw new Error("Failed to parse generated code");
-    }
+    const parsed = extractJson(content);
 
     return new Response(JSON.stringify(parsed), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
