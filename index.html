@@ -1,184 +1,148 @@
 <!DOCTYPE html>
-
-<html lang="en">
+<html>
 <head>
-<meta charset="UTF-8">
-<title>CodeWeaver AI</title>
+  <title>CodeWeaver AI</title>
 
-<style>
-body {
-  margin: 0;
-  font-family: Arial, sans-serif;
-  background: #0a0a0f;
-  color: white;
-}
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial;
+      background: radial-gradient(circle at top, #0f172a, #020617);
+      color: white;
+      text-align: center;
+    }
 
-/* 🌌 Glow background */
-.bg {
-  position: fixed;
-  width: 100%;
-  height: 100%;
-  background:
-    radial-gradient(circle at 20% 30%, rgba(0,0,255,0.3), transparent 40%),
-    radial-gradient(circle at 80% 70%, rgba(255,0,0,0.3), transparent 40%);
-  filter: blur(80px);
-  z-index: -1;
-}
+    h1 {
+      margin-top: 40px;
+      font-size: 40px;
+      color: #c084fc;
+    }
 
-/* 🧠 Container */
-.container {
-  max-width: 900px;
-  margin: 60px auto;
-  padding: 20px;
-  backdrop-filter: blur(20px);
-  border-radius: 20px;
-  border: 1px solid rgba(255,255,255,0.1);
-}
+    .container {
+      width: 80%;
+      max-width: 800px;
+      margin: 40px auto;
+      padding: 30px;
+      border-radius: 20px;
+      background: rgba(255,255,255,0.05);
+      box-shadow: 0 0 30px rgba(59,130,246,0.4),
+                  0 0 60px rgba(239,68,68,0.3);
+    }
 
-/* Title */
-h1 {
-  text-align: center;
-  text-shadow: 0 0 20px blue, 0 0 20px red;
-}
+    input {
+      width: 70%;
+      padding: 15px;
+      border-radius: 10px;
+      border: none;
+      outline: none;
+      font-size: 16px;
+    }
 
-/* Input */
-input {
-  width: 100%;
-  padding: 15px;
-  border-radius: 10px;
-  border: none;
-  background: #111;
-  color: white;
-  margin-top: 20px;
-}
+    button {
+      padding: 15px 25px;
+      border-radius: 10px;
+      border: none;
+      font-size: 16px;
+      cursor: pointer;
+      background: linear-gradient(90deg, #3b82f6, #ef4444);
+      color: white;
+      margin-left: 10px;
+      box-shadow: 0 0 15px rgba(239,68,68,0.7);
+    }
 
-/* Button */
-button {
-  width: 100%;
-  padding: 15px;
-  margin-top: 15px;
-  border-radius: 10px;
-  border: none;
-  background: linear-gradient(90deg, blue, red);
-  color: white;
-  font-weight: bold;
-  cursor: pointer;
-  box-shadow: 0 0 20px blue, 0 0 20px red;
-  transition: 0.3s;
-}
+    button:hover {
+      transform: scale(1.05);
+    }
 
-button:hover {
-  transform: scale(1.05);
-}
+    #output {
+      margin-top: 20px;
+      text-align: left;
+      background: rgba(255,255,255,0.05);
+      padding: 20px;
+      border-radius: 10px;
+      white-space: pre-wrap;
+    }
 
-/* Loader */
-#loader {
-  display: none;
-  text-align: center;
-  margin-top: 20px;
-}
+    /* 🐹 Hamster Loader */
+    #loader {
+      display: none;
+      margin-top: 20px;
+    }
 
-#loader div {
-  font-size: 50px;
-  animation: spin 1s linear infinite;
-}
+    .hamster {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      background: orange;
+      margin: auto;
+      animation: run 0.5s infinite alternate;
+    }
 
-/* Cards */
-.card {
-  background: #111;
-  padding: 15px;
-  margin-top: 15px;
-  border-radius: 10px;
-  border: 1px solid rgba(255,255,255,0.1);
-}
-
-/* Code block */
-.code {
-  background: #000;
-  padding: 10px;
-  border-radius: 8px;
-  overflow-x: auto;
-  font-size: 13px;
-}
-
-/* Animation */
-@keyframes spin {
-  0% { transform: rotate(0deg) translateX(0px); }
-  50% { transform: rotate(180deg) translateX(10px); }
-  100% { transform: rotate(360deg) translateX(0px); }
-}
-</style>
-
+    @keyframes run {
+      from { transform: translateX(-20px); }
+      to { transform: translateX(20px); }
+    }
+  </style>
 </head>
 
 <body>
 
-<div class="bg"></div>
+  <h1>🚀 CodeWeaver AI</h1>
 
-<div class="container">
+  <div class="container">
 
-<h1>🚀 CodeWeaver AI</h1>
+    <input id="prompt" placeholder="Enter your app idea..." />
+    <button onclick="generate()">✨ Generate</button>
 
-<input id="prompt" placeholder="Describe your app idea..." />
+    <div id="loader">
+      <div class="hamster"></div>
+      <p>Generating... 🐹</p>
+    </div>
 
-<button onclick="generate()">✨ Generate</button>
+    <div id="output"></div>
 
-<div id="loader">
-  <div>🐹</div>
-  <p>Generating your app...</p>
-</div>
-
-<div id="output"></div>
-
-</div>
+  </div>
 
 <script>
 async function generate() {
   const prompt = document.getElementById("prompt").value;
-  const loader = document.getElementById("loader");
-  const output = document.getElementById("output");
 
-  loader.style.display = "block";
-  output.innerHTML = "";
+  if (!prompt) {
+    alert("Enter something!");
+    return;
+  }
+
+  document.getElementById("loader").style.display = "block";
+  document.getElementById("output").innerText = "";
 
   try {
-    const res = await fetch("https://code-weaver-ai.onrender.com/generate", {
+    const res = await fetch("https://code-weaver-ai.onrender.com/generate/", {
       method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({ prompt })
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ prompt }),
+      mode: "cors"
     });
 
     const data = await res.json();
-    console.log("API RESPONSE:", data);
 
-    // FEATURES
-    let featuresHTML = "<div class='card'><h3>📌 Features</h3><ul>";
-    (data.features || []).forEach(f => {
-      featuresHTML += `<li>${f}</li>`;
-    });
-    featuresHTML += "</ul></div>";
+    document.getElementById("loader").style.display = "none";
 
-    // ARCHITECTURE
-    let archHTML = "<div class='card'><h3>🏗️ Architecture</h3>";
-    for (let key in (data.architecture || {})) {
-      archHTML += `<p><b>${key}:</b> ${JSON.stringify(data.architecture[key])}</p>`;
+    if (data.error) {
+      document.getElementById("output").innerText = "❌ Error: " + data.error;
+      return;
     }
-    archHTML += "</div>";
 
-    // CODE
-    let codeHTML = `
-      <div class='card'>
-        <h3>💻 Generated Code</h3>
-        <div class='code'>${(data.code || "").replace(/</g,"&lt;")}</div>
-      </div>
-    `;
-
-    output.innerHTML = featuresHTML + archHTML + codeHTML;
+    document.getElementById("output").innerText =
+      "📌 FEATURES:\n" + JSON.stringify(data.features, null, 2) +
+      "\n\n🏗️ ARCHITECTURE:\n" + JSON.stringify(data.architecture, null, 2) +
+      "\n\n💻 CODE:\n" + data.code;
 
   } catch (err) {
-    output.innerHTML = "<div class='card'>❌ Error: " + err.message + "<br><br>👉 Wait if server is waking up</div>";
-  } finally {
-    loader.style.display = "none";
+    document.getElementById("loader").style.display = "none";
+    document.getElementById("output").innerText =
+      "❌ Error: Failed to fetch\n👉 Wait 20 seconds and try again (Render sleep)";
   }
 }
 </script>
