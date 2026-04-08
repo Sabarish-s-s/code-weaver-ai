@@ -1,163 +1,81 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <title>CodeWeaver AI</title>
+<body style="margin:0; font-family:Arial; background:#0a0a0f; color:white;">
 
-  <style>
-    body {
-      margin: 0;
-      font-family: Arial;
-      background: radial-gradient(circle at top, #0f172a, #020617);
-      color: white;
-      overflow-x: hidden;
-    }
+<!-- 🌌 Background Glow -->
+<div style="
+position:fixed;
+width:100%;
+height:100%;
+background:
+radial-gradient(circle at 20% 30%, rgba(0,0,255,0.3), transparent 40%),
+radial-gradient(circle at 80% 70%, rgba(255,0,0,0.3), transparent 40%);
+filter: blur(80px);
+z-index:-1;
+"></div>
 
-    /* Background glow */
-    body::before {
-      content: "";
-      position: fixed;
-      width: 600px;
-      height: 600px;
-      background: radial-gradient(circle, rgba(59,130,246,0.3), transparent);
-      top: -100px;
-      left: -100px;
-      filter: blur(120px);
-      z-index: -1;
-    }
+<!-- 🧠 Main Container -->
+<div style="max-width:800px; margin:60px auto; padding:20px; backdrop-filter: blur(20px); border-radius:20px; border:1px solid rgba(255,255,255,0.1);">
 
-    body::after {
-      content: "";
-      position: fixed;
-      width: 600px;
-      height: 600px;
-      background: radial-gradient(circle, rgba(239,68,68,0.3), transparent);
-      bottom: -100px;
-      right: -100px;
-      filter: blur(120px);
-      z-index: -1;
-    }
+<h1 style="text-align:center; color:#fff; text-shadow:0 0 20px blue, 0 0 20px red;">
+🚀 CodeWeaver AI
+</h1>
 
-    h1 {
-      text-align: center;
-      margin-top: 30px;
-      font-size: 40px;
-      background: linear-gradient(90deg, #3b82f6, #ef4444);
-      -webkit-background-clip: text;
-      color: transparent;
-    }
+<input id="prompt" placeholder="Describe your app..."
+style="
+width:100%;
+padding:15px;
+border-radius:10px;
+border:none;
+outline:none;
+background:#111;
+color:white;
+margin-top:20px;
+"
+/>
 
-    .container {
-      width: 60%;
-      margin: auto;
-      margin-top: 40px;
-      padding: 30px;
+<button onclick="generate()"
+style="
+width:100%;
+padding:15px;
+margin-top:15px;
+border:none;
+border-radius:10px;
+background:linear-gradient(90deg, blue, red);
+color:white;
+font-weight:bold;
+cursor:pointer;
+box-shadow:0 0 20px blue, 0 0 20px red;
+transition:0.3s;
+"
+onmouseover="this.style.transform='scale(1.05)'"
+onmouseout="this.style.transform='scale(1)'"
+>
+✨ Generate
+</button>
 
-      background: rgba(255,255,255,0.05);
-      backdrop-filter: blur(20px);
-      border-radius: 15px;
+<!-- 🐹 Hamster Loader -->
+<div id="loader" style="display:none; text-align:center; margin-top:20px;">
+  <div style="font-size:50px; animation:spin 1s linear infinite;">🐹</div>
+  <p>Generating magic...</p>
+</div>
 
-      box-shadow:
-        0 0 20px rgba(59,130,246,0.4),
-        0 0 40px rgba(239,68,68,0.2);
-    }
-
-    input {
-      width: 70%;
-      padding: 12px;
-      border-radius: 10px;
-      border: none;
-      font-size: 16px;
-      background: rgba(255,255,255,0.1);
-      color: white;
-      outline: none;
-    }
-
-    button {
-      padding: 12px 20px;
-      margin-left: 10px;
-      border-radius: 10px;
-      border: none;
-      background: linear-gradient(90deg, #3b82f6, #ef4444);
-      color: white;
-      font-size: 16px;
-      cursor: pointer;
-      box-shadow: 0 0 15px rgba(59,130,246,0.7);
-    }
-
-    button:hover {
-      transform: scale(1.05);
-      box-shadow: 0 0 25px rgba(239,68,68,0.9);
-    }
-
-    #output {
-      margin-top: 30px;
-      background: rgba(255,255,255,0.05);
-      padding: 20px;
-      border-radius: 10px;
-      white-space: pre-wrap;
-    }
-
-    /* Hamster Loader */
-    .loader {
-      display: none;
-      text-align: center;
-      margin-top: 20px;
-    }
-
-    .hamster {
-      font-size: 40px;
-      animation: run 0.5s infinite linear;
-    }
-
-    @keyframes run {
-      0% { transform: translateX(0); }
-      50% { transform: translateX(10px); }
-      100% { transform: translateX(0); }
-    }
-  </style>
-</head>
-
-<body>
-
-<h1>🚀 CodeWeaver AI</h1>
-
-<div class="container">
-
-  <input id="prompt" placeholder="Describe your app idea..." />
-  <button onclick="generate()">Generate</button>
-
-  <div class="loader" id="loader">
-    <div class="hamster">🐹</div>
-    <p>Generating magic...</p>
-  </div>
-
-  <div id="output"></div>
+<pre id="output"
+style="
+margin-top:20px;
+white-space:pre-wrap;
+background:#111;
+padding:15px;
+border-radius:10px;
+border:1px solid rgba(255,255,255,0.1);
+"></pre>
 
 </div>
 
-<script>
-async function generate() {
-  const prompt = document.getElementById("prompt").value;
-
-  document.getElementById("loader").style.display = "block";
-  document.getElementById("output").innerText = "";
-
-  const res = await fetch("https://code-weaver-ai.onrender.com/generate", {
-    method: "POST",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({prompt})
-  });
-
-  const data = await res.json();
-
-  document.getElementById("loader").style.display = "none";
-
-  document.getElementById("output").innerText =
-    "📌 FEATURES:\n" + JSON.stringify(data.features, null, 2) +
-    "\n\n🏗️ ARCHITECTURE:\n" + JSON.stringify(data.architecture, null, 2) +
-    "\n\n💻 CODE:\n" + data.code;
+<style>
+@keyframes spin {
+  0% { transform: rotate(0deg) translateX(0px); }
+  50% { transform: rotate(180deg) translateX(10px); }
+  100% { transform: rotate(360deg) translateX(0px); }
 }
-</script>
+</style>
 
 </body>
-</html>
